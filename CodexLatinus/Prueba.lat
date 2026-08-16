@@ -1,0 +1,47 @@
+##
+    Sección opcional de variables, puede no existir
+    En esta sección solo se definen variables, arreglos
+    o estructuras globales
+##
+VARIABILES>
+esto edad : numerus 20;
+esto cifrado : falsus;
+esto comandante : textum "Estudiante X";
+esto fuerza : numerus 10;
+esto poder : numerus 0;
+
+##
+    Seccion de funciones, es opcional
+    En esta seccion solo se deben definir funciones
+##
+MUNERA>
+// Definición de funcion con retorno
+ratio numerus calcularPoder(esto fuerza : numerus) {
+    VARIABILES[
+       esto total : numerus fuerza * 2;
+    ]
+    reddere total;
+} finis;
+
+##
+    Seccion de funcion principal
+    Esta sección es obligatoria
+##
+MAIOR>
+>> "Hola comandante!" ;
+>> "Ingresa tu nombre por favor" ;
+comandante <<
+>> "Bienvenido" >> comandante ;
+>> "Ingresa tu edad" ;
+edad << 
+
+si (edad >= 18) {
+    cifrado = verum;
+    fuerza = 12;
+} finis ;
+
+>> "Tu poder es: >> " + calcularPoder(fuerza);
+>> "La puerta esta cifrada?" >> cifrado ;
+
+FINIS;
+
