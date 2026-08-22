@@ -1,6 +1,7 @@
-package codexlatinus.compiler;
+package codexlatinus.compiler.semantic;
 
 import codexlatinus.CodexLatinusParser;
+import codexlatinus.compiler.symbol.*;
 
 public abstract class MiVisitorControl extends MiVisitorExpresiones
 {

@@ -1,9 +1,10 @@
-package codexlatinus.compiler;
+package codexlatinus.compiler.semantic;
 
 import codexlatinus.CodexLatinusParser;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import codexlatinus.compiler.symbol.*;
 
 public abstract class MiVisitorDeclaraciones extends MiVisitorBase
 {

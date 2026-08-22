@@ -1,3 +1,3 @@
-package codexlatinus.compiler;
+package codexlatinus.compiler.semantic;
 
 public class MiVisitor extends MiVisitorControl {}

@@ -1,4 +1,4 @@
-package codexlatinus.compiler;
+package codexlatinus.compiler.symbol;
 
 import java.util.*;
 

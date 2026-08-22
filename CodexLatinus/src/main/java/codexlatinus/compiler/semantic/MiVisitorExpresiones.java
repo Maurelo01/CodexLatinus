@@ -1,8 +1,9 @@
-package codexlatinus.compiler;
+package codexlatinus.compiler.semantic;
 
 import codexlatinus.CodexLatinusParser;
 import java.util.ArrayList;
 import java.util.List;
+import codexlatinus.compiler.symbol.*;
 
 public abstract class MiVisitorExpresiones extends MiVisitorAsignaciones
 {
