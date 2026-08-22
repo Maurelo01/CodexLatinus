@@ -383,4 +383,9 @@ public abstract class MiVisitorBase extends CodexLatinusBaseVisitor<Object>
     {
         return erroresSemanticos;
     }
+    
+    public TablaSimbolos getTablaSimbolos()
+    {
+        return tabla;
+    }
 }
