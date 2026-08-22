@@ -1,9 +1,15 @@
 package codexlatinus;
 
 import codexlatinus.compiler.semantic.MiVisitor;
+import codexlatinus.compiler.symbol.TablaSimbolos;
 import codexlatinus.compiler.translation.PigLatinTraductor;
+import codexlatinus.compiler.visualizacion.GeneradorASTDOT;
+import codexlatinus.compiler.visualizacion.GeneradorSimbolosDOT;
+import codexlatinus.compiler.visualizacion.ParseTraceListener;
+import codexlatinus.compiler.visualizacion.PasoPila;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 
@@ -40,6 +46,17 @@ public class CodexLatinus
         }
         MiVisitor visitor = new MiVisitor();
         visitor.visit(tree);
+        TablaSimbolos tablaSimbolos = visitor.getTablaSimbolos();
+        GeneradorASTDOT astGen = new GeneradorASTDOT();
+        String astDOT = astGen.generarDOT(tree);
+        Files.writeString(Path.of("ast.dot"), astDOT);
+        GeneradorSimbolosDOT simbGen = new GeneradorSimbolosDOT();
+        String simbolosDOT = simbGen.generarDOT(visitor.getTablaSimbolos());
+        Files.writeString(Path.of("simbolos.dot"), simbolosDOT);
+        ParseTreeWalker walker = new ParseTreeWalker();
+        ParseTraceListener traceListener = new ParseTraceListener();
+        walker.walk(traceListener, tree);
+        List<PasoPila> pasos = traceListener.getPasos();
         if (visitor.getErroresSemanticos() > 0)
         {
             System.err.println("Se encontraron " + visitor.getErroresSemanticos() + " errores semánticos.");
