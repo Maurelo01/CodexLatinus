@@ -25,7 +25,7 @@ ratio numerus calcularPoder(esto fuerza : numerus) {
 
 ##
     Seccion de funcion principal
-    Esta sección es obligatoria
+    Esta sección es obligatoria    
 ##
 MAIOR>
 >> "Hola comandante!" ;
@@ -40,8 +40,7 @@ si (edad >= 18) {
     fuerza = 12;
 } finis ;
 
->> "Tu poder es: >> " + calcularPoder(fuerza);
+>> "Tu poder es:" >>  calcularPoder(fuerza);
 >> "La puerta esta cifrada?" >> cifrado ;
 
 FINIS;
-

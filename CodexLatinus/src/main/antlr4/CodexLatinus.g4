@@ -35,7 +35,7 @@ package codexlatinus;
 
         estructuraInicial: LLAVE_IZQ atributos_valores LLAVE_DER;
         arr_valores: LLAVE_IZQ valorArray (COMA valorArray)* LLAVE_DER;
-        valorInicial: expresion | estructuraInicial;
+        valorInicial: expresion;
         valorArray: expresion | estructuraAnonima;
         atributos_valores: atributo_valor (COMA atributo_valor)*;
         atributo_valor: ID DOSPUNTOS valorAtributo;
@@ -78,8 +78,8 @@ package codexlatinus;
             | expresion OR termino #OrLogico
             | termino #toTermino;
 
-        termino: termino (POR | DIVISION) factor
-            | factor;
+        termino: termino (POR | DIVISION) factor #MultDiv
+            | factor #ToFactor;
 
         factor: NUMERO #NumLiteral
             | DECIMALES #DecLiteral
