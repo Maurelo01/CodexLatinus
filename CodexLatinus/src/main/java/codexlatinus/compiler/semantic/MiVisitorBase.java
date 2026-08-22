@@ -1,7 +1,8 @@
-package codexlatinus.compiler;
+package codexlatinus.compiler.semantic;
 
 import codexlatinus.CodexLatinusBaseVisitor;
 import codexlatinus.CodexLatinusParser;
+import codexlatinus.compiler.symbol.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;

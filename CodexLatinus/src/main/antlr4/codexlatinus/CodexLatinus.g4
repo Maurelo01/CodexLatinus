@@ -1,9 +1,5 @@
 grammar CodexLatinus;
 
-@header {
-package codexlatinus;
-}
-
 // PARSER
     programa: seccionDeclaraciones? seccionFunciones? seccionCodigo FINIS_MAYUS PUNTOYCOMA EOF;
 
