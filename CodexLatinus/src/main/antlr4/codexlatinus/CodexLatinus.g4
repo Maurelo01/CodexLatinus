@@ -165,8 +165,8 @@ grammar CodexLatinus;
 
 
     // COMENTARIOS
-        COMENTARIO_LINEA: '//' ~[\r\n]* -> skip;
-        COMENTARIO_BLOQUE: '##' .*? '##' -> skip;
+        COMENTARIO_LINEA: '//' ~[\r\n]* -> channel(HIDDEN);
+        COMENTARIO_BLOQUE: '##' .*? '##' -> channel(HIDDEN);
 
     // OPERADORES
             // Aritmeticos
