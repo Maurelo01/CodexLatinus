@@ -158,6 +158,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         areaSalida = new javax.swing.JTextArea();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Compilador Codex Latinus");
         setPreferredSize(new java.awt.Dimension(1200, 800));
 
         jToolBar1.setRollover(true);
@@ -273,6 +274,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
     
     private void btnAbrirLatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAbrirLatActionPerformed
