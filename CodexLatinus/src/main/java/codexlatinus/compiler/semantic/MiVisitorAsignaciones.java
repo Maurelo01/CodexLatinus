@@ -172,4 +172,89 @@ public abstract class MiVisitorAsignaciones extends MiVisitorDeclaraciones
         validarEstructuraAnonima(ctx.estructuraAnonima(), info, ctx.start);
         return null;
     }
+    
+    @Override
+    public Object visitAsigAtributoEstructura(CodexLatinusParser.AsigAtributoEstructuraContext ctx)
+    {
+        String idVariable = ctx.ID(0).getText();
+        String nombreAtributo = ctx.ID(1).getText();
+        Simbolo simbolo = tabla.buscar(idVariable);
+        if (simbolo == null)
+        {
+            error("Variable " + idVariable + " no declarada", ctx.start);
+            return null;
+        }
+        String tipoVar = obtenerTipoCompleto(simbolo);
+        InfoEstructura info = estructuras.get(tipoVar);
+        if (info == null)
+        {
+            error("La variable " + idVariable + " no es una estructura", ctx.start);
+            return null;
+        }
+        String tipoAtributo = info.atributos.get(nombreAtributo);
+        if (tipoAtributo == null)
+        {
+            error("La estructura " + tipoVar + " no tiene un atributo " + nombreAtributo, ctx.start);
+            return null;
+        }
+        InfoEstructura infoAtributo = estructuras.get(tipoAtributo);
+        if (infoAtributo == null)
+        {
+            error("El atributo no es una estructura válida", ctx.start);
+            return null;
+        }
+        validarEstructuraAnonima(ctx.estructuraAnonima(), infoAtributo, ctx.start);
+        return null;
+    }
+
+    @Override
+    public Object visitAsigAtributoArrayEstructura(CodexLatinusParser.AsigAtributoArrayEstructuraContext ctx)
+    {
+        String idVariable = ctx.ID(0).getText();
+        String nombreAtributo = ctx.ID(1).getText();
+        Simbolo simbolo = tabla.buscar(idVariable);
+        if (simbolo == null)
+        {
+            error("Variable " + idVariable + " no declarada", ctx.start);
+            return null;
+        }
+        String tipoVar = obtenerTipoCompleto(simbolo);
+        InfoEstructura info = estructuras.get(tipoVar);
+        if (info == null)
+        {
+            error("La variable " + idVariable + " no es una estructura", ctx.start);
+            return null;
+        }
+        String tipoAtributo = info.atributos.get(nombreAtributo);
+        if (tipoAtributo == null)
+        {
+            error("La estructura " + tipoVar + " no tiene un atributo " + nombreAtributo, ctx.start);
+            return null;
+        }
+        if (!esArray(tipoAtributo))
+        {
+            error("El atributo " + nombreAtributo + " no es un arreglo", ctx.start);
+            return null;
+        }
+        String tipoIndice = (String) visit(ctx.expresion());
+        if (!"numerus".equals(tipoIndice))
+        {
+            error("El índice del arreglo debe ser numerus", ctx.start);
+            return null;
+        }
+        Integer tamanoAtributo = simbolo.getTamañoAtributo(nombreAtributo);
+        if (tamanoAtributo != null)
+        {
+            verificarRangoArrayAtributo(simbolo, nombreAtributo, tamanoAtributo, ctx.expresion(), ctx.start);
+        }
+        String tipoBase = tipoBaseDeArray(tipoAtributo);
+        InfoEstructura infoBase = estructuras.get(tipoBase);
+        if (infoBase == null)
+        {
+            error("El arreglo no es de un tipo estructura válido", ctx.start);
+            return null;
+        }
+        validarEstructuraAnonima(ctx.estructuraAnonima(), infoBase, ctx.start);
+        return null;
+    }
 }

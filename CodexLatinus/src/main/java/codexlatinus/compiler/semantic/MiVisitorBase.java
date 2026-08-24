@@ -18,6 +18,7 @@ public abstract class MiVisitorBase extends CodexLatinusBaseVisitor<Object>
     protected final Map<String, InfoEstructura> estructuras = new HashMap<>();
     protected String tipoRetornoEsperadoActual = null;
     protected int dentroDeCiclo = 0;
+    protected final List<String> listaErrores = new ArrayList<>();
     
     protected static class InfoFuncion
     {
@@ -52,7 +53,13 @@ public abstract class MiVisitorBase extends CodexLatinusBaseVisitor<Object>
     protected void error(String mensaje, Token token)
     {
         erroresSemanticos++;
-        System.err.printf("Error semántico en línea %d, columna %d: %s%n", token.getLine(), token.getCharPositionInLine() + 1, mensaje);
+        String msgError = String.format("Error Semántico en línea %d, columna %d: %s", token.getLine(), token.getCharPositionInLine() + 1, mensaje);
+        listaErrores.add(msgError);
+    }
+    
+    public List<String> getListaErrores()
+    {
+        return listaErrores;
     }
 
     protected Simbolo.Tipo mapearTipo(String tipoTexto)
@@ -242,15 +249,15 @@ public abstract class MiVisitorBase extends CodexLatinusBaseVisitor<Object>
     protected Integer evaluarEntero(CodexLatinusParser.ExpresionContext ctx)
     {
         if (ctx == null) return null;
-        if (ctx instanceof CodexLatinusParser.ToTerminoContext)
+        if (ctx instanceof CodexLatinusParser.ToFactorContext)
         {
-            return evaluarTermino(((CodexLatinusParser.ToTerminoContext) ctx).termino());
+            return evaluarFactor(((CodexLatinusParser.ToFactorContext) ctx).factor());
         }
         else if (ctx instanceof CodexLatinusParser.SumaRestaContext)
         {
             CodexLatinusParser.SumaRestaContext s = (CodexLatinusParser.SumaRestaContext) ctx;
-            Integer izq = evaluarEntero(s.expresion());
-            Integer der = evaluarTermino(s.termino());
+            Integer izq = evaluarEntero(s.expresion(0));
+            Integer der = evaluarEntero(s.expresion(1));
             if (izq != null && der != null)
             {
                 if (s.MAS() != null) return izq + der;
@@ -258,21 +265,11 @@ public abstract class MiVisitorBase extends CodexLatinusBaseVisitor<Object>
             }
             return null;
         }
-        return null;
-    }
-
-    protected Integer evaluarTermino(CodexLatinusParser.TerminoContext ctx)
-    {
-        if (ctx == null) return null;
-        if (ctx instanceof CodexLatinusParser.ToFactorContext)
-        {
-            return evaluarFactor(((CodexLatinusParser.ToFactorContext) ctx).factor());
-        }
         else if (ctx instanceof CodexLatinusParser.MultDivContext)
         {
             CodexLatinusParser.MultDivContext m = (CodexLatinusParser.MultDivContext) ctx;
-            Integer izq = evaluarTermino(m.termino());
-            Integer der = evaluarFactor(m.factor());
+            Integer izq = evaluarEntero(m.expresion(0));
+            Integer der = evaluarEntero(m.expresion(1));
             if (izq != null && der != null)
             {
                 if (m.POR() != null) return izq * der;
@@ -280,6 +277,11 @@ public abstract class MiVisitorBase extends CodexLatinusBaseVisitor<Object>
                 {
                     if (der == 0) return null;
                     return izq / der;
+                }
+                if (m.MODULO() != null)
+                {
+                    if (der == 0) return null;
+                    return izq % der;
                 }
             }
             return null;
@@ -315,6 +317,14 @@ public abstract class MiVisitorBase extends CodexLatinusBaseVisitor<Object>
                 if (decimal == Math.floor(decimal)) return (int) decimal;
             }
             catch (NumberFormatException e) {}
+        }
+        else if (ctx instanceof CodexLatinusParser.NegacionUnariaContext)
+        {
+            Integer valor = evaluarFactor(((CodexLatinusParser.NegacionUnariaContext) ctx).factor());
+            if (valor != null)
+            {
+                return -valor;
+            }
         }
         return null;
     }

@@ -12,6 +12,7 @@ grammar CodexLatinus;
         definicionEstructura: STRUCTURA ID LLAVE_IZQ (atributoEstructura)+ LLAVE_DER FINIS PUNTOYCOMA;
 
         atributoEstructura: (ESTO ID DOSPUNTOS tipo (PUNTOYCOMA | COMA))
+                        | (ESTO ID DOSPUNTOS (VERUM | FALSUS) (PUNTOYCOMA | COMA))
                         | (SERIES ID DOSPUNTOS tipo (PUNTOYCOMA | COMA));
 
     // Funciones
@@ -55,7 +56,9 @@ grammar CodexLatinus;
                 | ID CORCH_IZQ expresion CORCH_DER IGUAL expresion #AsigArreglo
                 | ID PUNTO ID IGUAL expresion #AsigAtributo
                 | ID PUNTO ID CORCH_IZQ expresion CORCH_DER IGUAL expresion #AsigAtributoArray
-                | ID CORCH_IZQ expresion CORCH_DER IGUAL estructuraAnonima #AsigArrayEstructura;
+                | ID CORCH_IZQ expresion CORCH_DER IGUAL estructuraAnonima #AsigArrayEstructura
+                | ID PUNTO ID IGUAL estructuraAnonima #AsigAtributoEstructura
+                | ID PUNTO ID CORCH_IZQ expresion CORCH_DER IGUAL estructuraAnonima #AsigAtributoArrayEstructura;
 
         estructuraAnonima: LLAVE_IZQ atributos_valores LLAVE_DER;
         retorno: REDDERE expresion? PUNTOYCOMA;
@@ -67,17 +70,16 @@ grammar CodexLatinus;
                 | ID PUNTO ID (MAS_ABREVIADO | MENOS_ABREVIADO) #IncrementoAtributo;
 
     // Expresiones
-        expresion: expresion (MAS | MENOS) termino #SumaResta
-            | expresion (MAYOR | MAYOR_IGUAL | MENOR | MENOR_IGUAL) termino #Comparacion
-            | expresion (IGUALIGUAL | DIFERENTEDE) termino #Igualdad
-            | expresion AND termino #AndLogico
-            | expresion OR termino #OrLogico
-            | termino #toTermino;
-
-        termino: termino (POR | DIVISION) factor #MultDiv
+        expresion: expresion (POR | DIVISION | MODULO) expresion #MultDiv
+            | expresion (MAS | MENOS) expresion #SumaResta
+            | expresion (MAYOR | MAYOR_IGUAL | MENOR | MENOR_IGUAL) expresion #Comparacion
+            | expresion (IGUALIGUAL | DIFERENTEDE) expresion #Igualdad
+            | expresion AND expresion #AndLogico
+            | expresion OR expresion #OrLogico
             | factor #ToFactor;
 
-        factor: NUMERO #NumLiteral
+        factor: MENOS factor #NegacionUnaria
+            | NUMERO #NumLiteral
             | DECIMALES #DecLiteral
             | TEXTO #TextLiteral
             | CARACTER #CharLiteral
@@ -106,7 +108,7 @@ grammar CodexLatinus;
         bucle: bucleDum | bucleFacere | buclePer;
         bucleDum: DUM PAREN_IZQ expresion PAREN_DER bloque FINIS PUNTOYCOMA;
         bucleFacere: FACERE bloque DUM PAREN_IZQ expresion PAREN_DER PUNTOYCOMA;
-        buclePer: PER PAREN_IZQ declaracion expresion PUNTOYCOMA actualizacion? PAREN_DER bloque;
+        buclePer: PER PAREN_IZQ declaracion expresion PUNTOYCOMA actualizacion PUNTOYCOMA? PAREN_DER bloque;
 
         actualizacion: ID (MAS_ABREVIADO | MENOS_ABREVIADO)
                 | asignacion;
@@ -138,6 +140,7 @@ grammar CodexLatinus;
             ACTIO: 'actio';
             RATIO: 'ratio';
             REDDERE: 'reddere';
+            NON: 'non';
 
         // Booleano
             VERUM: 'verum';
@@ -174,6 +177,7 @@ grammar CodexLatinus;
             MENOS: '-';
             POR: '*';
             DIVISION: '/';
+            MODULO: '%';
             MAS_ABREVIADO: '++';
             MENOS_ABREVIADO: '--';
 
@@ -188,9 +192,6 @@ grammar CodexLatinus;
             // Logicos
             AND: '&&';
             OR: '||';
-
-            // Negacion
-            NON: 'non';
 
             // Declaratorio
             DOSPUNTOS: ':';

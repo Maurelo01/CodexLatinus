@@ -11,8 +11,8 @@ public abstract class MiVisitorExpresiones extends MiVisitorAsignaciones
     @Override
     public Object visitSumaResta(CodexLatinusParser.SumaRestaContext ctx)
     {
-        String tipoIzq = (String) visit(ctx.expresion());
-        String tipoDer = (String) visit(ctx.termino());
+        String tipoIzq = (String) visit(ctx.expresion(0));
+        String tipoDer = (String) visit(ctx.expresion(1));
         if (tipoIzq == null || tipoDer == null) return null;
         if ("textum".equals(tipoIzq) || "textum".equals(tipoDer))
         {
@@ -40,8 +40,8 @@ public abstract class MiVisitorExpresiones extends MiVisitorAsignaciones
     @Override
     public Object visitComparacion(CodexLatinusParser.ComparacionContext ctx)
     {
-        String tipoIzq = (String) visit(ctx.expresion());
-        String tipoDer = (String) visit(ctx.termino());
+        String tipoIzq = (String) visit(ctx.expresion(0));
+        String tipoDer = (String) visit(ctx.expresion(1));
         if (tipoIzq == null || tipoDer == null) return null;
         if ("textum".equals(tipoIzq) || "textum".equals(tipoDer) ||
             "bool".equals(tipoIzq) || "bool".equals(tipoDer) ||
@@ -57,8 +57,8 @@ public abstract class MiVisitorExpresiones extends MiVisitorAsignaciones
     @Override
     public Object visitIgualdad(CodexLatinusParser.IgualdadContext ctx)
     {
-        String tipoIzq = (String) visit(ctx.expresion());
-        String tipoDer = (String) visit(ctx.termino());
+        String tipoIzq = (String) visit(ctx.expresion(0));
+        String tipoDer = (String) visit(ctx.expresion(1));
         if (tipoIzq == null || tipoDer == null) return null;
         if (!tipoIzq.equals(tipoDer))
         {
@@ -77,8 +77,8 @@ public abstract class MiVisitorExpresiones extends MiVisitorAsignaciones
     @Override
     public Object visitAndLogico(CodexLatinusParser.AndLogicoContext ctx)
     {
-        String tipoIzq = (String) visit(ctx.expresion());
-        String tipoDer = (String) visit(ctx.termino());
+        String tipoIzq = (String) visit(ctx.expresion(0));
+        String tipoDer = (String) visit(ctx.expresion(1));
         if (!"bool".equals(tipoIzq) || !"bool".equals(tipoDer))
         {
             error("El operador && requiere operandos booleanos", ctx.start);
@@ -90,8 +90,8 @@ public abstract class MiVisitorExpresiones extends MiVisitorAsignaciones
     @Override
     public Object visitOrLogico(CodexLatinusParser.OrLogicoContext ctx)
     {
-        String tipoIzq = (String) visit(ctx.expresion());
-        String tipoDer = (String) visit(ctx.termino());
+        String tipoIzq = (String) visit(ctx.expresion(0));
+        String tipoDer = (String) visit(ctx.expresion(1));
         if (!"bool".equals(tipoIzq) || !"bool".equals(tipoDer))
         {
             error("El operador || requiere operandos booleanos", ctx.start);
@@ -103,8 +103,8 @@ public abstract class MiVisitorExpresiones extends MiVisitorAsignaciones
     @Override
     public Object visitMultDiv(CodexLatinusParser.MultDivContext ctx)
     {
-        String tipoIzq = (String) visit(ctx.termino());
-        String tipoDer = (String) visit(ctx.factor());
+        String tipoIzq = (String) visit(ctx.expresion(0));
+        String tipoDer = (String) visit(ctx.expresion(1));
         if (!esTipoPrimitivo(tipoIzq) || !esTipoPrimitivo(tipoDer) ||
             "textum".equals(tipoIzq) || "textum".equals(tipoDer) ||
             "bool".equals(tipoIzq) || "bool".equals(tipoDer) ||
@@ -118,12 +118,6 @@ public abstract class MiVisitorExpresiones extends MiVisitorAsignaciones
         int nivelDer = nivelTipo(tipoDer);
         return nivelIzq >= nivelDer ? tipoIzq : tipoDer;
     }
-    
-    @Override
-    public Object visitToTermino(CodexLatinusParser.ToTerminoContext ctx)
-    {
-        return visit(ctx.termino());
-    }
 
     @Override
     public Object visitToFactor(CodexLatinusParser.ToFactorContext ctx)
@@ -132,6 +126,17 @@ public abstract class MiVisitorExpresiones extends MiVisitorAsignaciones
     }
 
     // Factores
+    @Override
+    public Object visitNegacionUnaria(CodexLatinusParser.NegacionUnariaContext ctx)
+    {
+        String tipo = (String) visit(ctx.factor());
+        if (!"numerus".equals(tipo) && !"decimalis".equals(tipo))
+        {
+            error("El operador - unario solo se puede aplicar a tipos numéricos", ctx.start);
+            return null;
+        }
+        return tipo;
+    }
     @Override
     public Object visitNumLiteral(CodexLatinusParser.NumLiteralContext ctx)
     {
@@ -197,6 +202,15 @@ public abstract class MiVisitorExpresiones extends MiVisitorAsignaciones
     public Object visitAccesoArray(CodexLatinusParser.AccesoArrayContext ctx)
     {
         String id = ctx.ID().getText();
+        if (estructuras.containsKey(id) || esTipoPrimitivo(id))
+        {
+            String tipoIndice = (String) visit(ctx.expresion());
+            if (!"numerus".equals(tipoIndice))
+            {
+                error("El tamaño del arreglo instanciado debe ser numerus", ctx.start);
+            }
+            return "series " + id;
+        }
         Simbolo simbolo = tabla.buscar(id);
         if (simbolo == null)
         {

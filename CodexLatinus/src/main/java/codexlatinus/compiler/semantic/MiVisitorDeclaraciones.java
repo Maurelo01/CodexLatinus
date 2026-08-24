@@ -41,13 +41,20 @@ public abstract class MiVisitorDeclaraciones extends MiVisitorBase
         {
             String nombreAtributo = attrCtx.ID().getText();
             String tipoAtributo;
-            if (attrCtx.SERIES() != null) 
+            if (attrCtx.tipo() != null)
             {
-                tipoAtributo = "series " + textoCompletoTipo(attrCtx.tipo());
+                if (attrCtx.SERIES() != null) 
+                {
+                    tipoAtributo = "series " + textoCompletoTipo(attrCtx.tipo());
+                }
+                else
+                {
+                    tipoAtributo = textoCompletoTipo(attrCtx.tipo());
+                }
             }
             else
             {
-                tipoAtributo = textoCompletoTipo(attrCtx.tipo());
+                tipoAtributo = "bool";
             }
             if (info.atributos.containsKey(nombreAtributo))
             {

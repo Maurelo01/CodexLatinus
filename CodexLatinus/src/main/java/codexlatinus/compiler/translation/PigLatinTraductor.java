@@ -84,6 +84,14 @@ public class PigLatinTraductor
                 }
                 sb.append("} ").append(traducirPalabra("finis")).append(";\n");
                 break;
+            case "EstructuraAnonima":
+                sb.append("{ ");
+                if (nodo.getHijos().size() > 0)
+                {
+                    sb.append(traducir(nodo.getHijo(0)));
+                }
+                sb.append(" }");
+                break;
             case "Atributo":
                 // Puede tener hijo EsArreglo para series
                 boolean esArreglo = false;
@@ -109,7 +117,7 @@ public class PigLatinTraductor
                 break;
             // FUNCIONES
             case "Funcion":
-                String tipoFuncion = nodo.getHijo(0).getValor(); // actio o ratio
+                String tipoFuncion = nodo.getHijo(0).getValor();
                 if (tipoFuncion.equals("actio"))
                 {
                     sb.append(traducirPalabra("actio")).append(" ");
@@ -117,20 +125,33 @@ public class PigLatinTraductor
                 else
                 {
                     sb.append(traducirPalabra("ratio")).append(" ");
-                    sb.append(traducirTipo(nodo.getHijo(1))).append(" ");
+                    for (NodoAST h : nodo.getHijos())
+                    {
+                        if (h.getEtiqueta().equals("TipoRetorno"))
+                        {
+                            sb.append(traducirPalabra(h.getValor())).append(" ");
+                            break;
+                        }
+                    }
                 }
                 sb.append(traducirPalabra(nodo.getValor())).append("(");
-                if (nodo.getHijos().size() > 2 && nodo.getHijo(2).getEtiqueta().equals("Parametros"))
+                for (NodoAST h : nodo.getHijos())
                 {
-                    sb.append(traducir(nodo.getHijo(2)));
+                    if (h.getEtiqueta().equals("Parametros"))
+                    {
+                        sb.append(traducir(h));
+                        break;
+                    }
                 }
                 sb.append("){\n");
-                // Variables locales o instrucciones
-                for (int i = 2; i < nodo.getHijos().size(); i++)
+                for (NodoAST h : nodo.getHijos())
                 {
-                    NodoAST hijo = nodo.getHijo(i);
-                    if (hijo.getEtiqueta().equals("Parametros")) continue; // ya procesado
-                    sb.append(traducir(hijo)).append("\n");
+                    String et = h.getEtiqueta();
+                    if (et.equals("TipoFuncion") || et.equals("TipoRetorno") || et.equals("Parametros"))
+                    {
+                        continue;
+                    }
+                    sb.append(traducir(h)).append("\n");
                 }
                 sb.append("} ").append(traducirPalabra("finis")).append(";\n");
                 break;
@@ -219,14 +240,17 @@ public class PigLatinTraductor
                 }
                 break;
             case "AtributoValor":
-                sb.append(traducirPalabra(nodo.getValor())).append(" : ")
-                   .append(traducir(nodo.getHijo(0)));
+                sb.append(traducirPalabra(nodo.getValor())).append(" : ").append(traducir(nodo.getHijo(0)));
                 break;
             case "TamanoArray":
                 sb.append(nodo.getValor());
                 break;
 
             // INSTRUCCIONES
+            case "InstruccionExpresion":
+            case "InstruccionIncremento":
+                sb.append(traducir(nodo.getHijo(0))).append(";");
+                break;
             case "Asignacion":
                 sb.append(traducirPalabra(nodo.getHijo(0).getValor())).append(" = ")
                    .append(traducir(nodo.getHijo(1))).append(";");
@@ -252,27 +276,38 @@ public class PigLatinTraductor
                    .append(traducir(nodo.getHijo(1))).append("] = ")
                    .append(traducir(nodo.getHijo(2))).append(";");
                 break;
+            case "AsignacionAtributoEstructura":
+                sb.append(traducirPalabra(nodo.getHijo(0).getValor())).append(".")
+                        .append(traducirPalabra(nodo.getHijo(1).getValor())).append(" = ")
+                        .append(traducir(nodo.getHijo(2))).append(";");
+                break;
+            case "AsignacionAtributoArrayEstructura":
+                sb.append(traducirPalabra(nodo.getHijo(0).getValor())).append(".")
+                        .append(traducirPalabra(nodo.getHijo(1).getValor())).append("[")
+                        .append(traducir(nodo.getHijo(2))).append("] = ")
+                        .append(traducir(nodo.getHijo(3))).append(";");
+                break;    
             case "Incremento":
-                sb.append(traducirPalabra(nodo.getValor())).append("++;");
+                sb.append(traducirPalabra(nodo.getValor())).append("++");
                 break;
             case "Decremento":
-                sb.append(traducirPalabra(nodo.getValor())).append("--;");
+                sb.append(traducirPalabra(nodo.getValor())).append("--");
                 break;
             case "IncrementoArray":
                 sb.append(traducirPalabra(nodo.getHijo(0).getValor())).append("[")
-                   .append(traducir(nodo.getHijo(1))).append("]++;");
+                   .append(traducir(nodo.getHijo(1))).append("]++");
                 break;
             case "DecrementoArray":
                 sb.append(traducirPalabra(nodo.getHijo(0).getValor())).append("[")
-                   .append(traducir(nodo.getHijo(1))).append("]--;");
+                   .append(traducir(nodo.getHijo(1))).append("]--");
                 break;
             case "IncrementoAtributo":
                 sb.append(traducirPalabra(nodo.getHijo(0).getValor())).append(".")
-                   .append(traducirPalabra(nodo.getHijo(1).getValor())).append("++;");
+                   .append(traducirPalabra(nodo.getHijo(1).getValor())).append("++");
                 break;
             case "DecrementoAtributo":
                 sb.append(traducirPalabra(nodo.getHijo(0).getValor())).append(".")
-                   .append(traducirPalabra(nodo.getHijo(1).getValor())).append("--;");
+                   .append(traducirPalabra(nodo.getHijo(1).getValor())).append("--");
                 break;
             case "Retorno":
                 sb.append(traducirPalabra("reddere"));
@@ -361,6 +396,7 @@ public class PigLatinTraductor
             case "-":
             case "*":
             case "/":
+            case "%":
             case "==":
             case "!=":
             case "<":
@@ -382,6 +418,9 @@ public class PigLatinTraductor
                 break;
 
             // LITERALES
+            case "NegacionUnaria":
+                sb.append("-").append(traducir(nodo.getHijo(0)));
+                break;    
             case "Numero":
             case "Decimal":
             case "Texto":
