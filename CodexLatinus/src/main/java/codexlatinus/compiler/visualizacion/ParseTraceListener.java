@@ -9,7 +9,6 @@ import java.util.*;
 public class ParseTraceListener extends CodexLatinusBaseListener
 {
     private final List<String> pilaReglas = new ArrayList<>();
-    private final List<String> log = new ArrayList<>();
     private final List<PasoPila> pasos = new ArrayList<>();
 
     @Override
@@ -17,8 +16,7 @@ public class ParseTraceListener extends CodexLatinusBaseListener
     {
         String nombreRegla = ctx.getClass().getSimpleName().replace("Context", "");
         pilaReglas.add(nombreRegla);
-        log.add("push " + nombreRegla);
-        guardarPaso();
+        pasos.add(new PasoPila(pilaReglas, "push " + nombreRegla));
     }
 
     @Override
@@ -29,26 +27,17 @@ public class ParseTraceListener extends CodexLatinusBaseListener
         {
             pilaReglas.remove(pilaReglas.size() - 1);
         }
-        log.add("pop " + nombreRegla);
-        guardarPaso();
+        pasos.add(new PasoPila(pilaReglas, "pop " + nombreRegla));
     }
-
     @Override
     public void visitTerminal(TerminalNode nodo)
     {
-        log.add("shift: " + nodo.getText());
-        guardarPaso();
+        pasos.add(new PasoPila(pilaReglas, "shift: " + nodo.getText()));
     }
-
     @Override
     public void visitErrorNode(ErrorNode nodo)
     {
-        log.add("error: " + nodo.getText());
-        guardarPaso();
-    }
-    private void guardarPaso()
-    {
-        pasos.add(new PasoPila(new ArrayList<>(pilaReglas), log));
+        pasos.add(new PasoPila(pilaReglas, "error: " + nodo.getText()));
     }
 
     public List<PasoPila> getPasos()

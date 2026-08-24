@@ -6,19 +6,25 @@ package codexlatinus.frontend;
 
 import codexlatinus.CodexLatinusLexer;
 import codexlatinus.CodexLatinusParser;
+import codexlatinus.compiler.ast.ASTVisitor;
+import codexlatinus.compiler.ast.NodoAST;
 import codexlatinus.compiler.semantic.MiVisitor;
 import codexlatinus.compiler.translation.PigLatinTraductor;
 import codexlatinus.compiler.visualizacion.GeneradorASTDOT;
 import codexlatinus.compiler.visualizacion.GeneradorSimbolosDOT;
+import codexlatinus.compiler.visualizacion.GraphvizRenderizado;
 import codexlatinus.compiler.visualizacion.ParseTraceListener;
 import codexlatinus.compiler.visualizacion.PasoPila;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.Image;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -38,9 +44,16 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(VentanaPrincipal.class.getName());
     private List<PasoPila> pasos;
     private ParseTree arbolActual;
+    private NodoAST raizASTActual;
     private String codigoPig = "";
     private final LexerColoreado color = new LexerColoreado();
     private javax.swing.Timer timerColoreado;
+    private ImageIcon astOriginal;
+    private ImageIcon tablaOriginal;
+    private double zoomAst = 1.0;
+    private double zoomTabla = 1.0;
+    private String astSvg;
+    private String tablaSvg;
     /**
      * Creates new form VentanaPrincipal
      */
@@ -49,6 +62,35 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         NumeroLineaVisual numerosLinea = new NumeroLineaVisual(editor, jScrollPane1);
         jScrollPane1.setRowHeaderView(numerosLinea);
         jScrollPane1.getVerticalScrollBar().addAdjustmentListener(e -> numerosLinea.actualizar());
+        lblAstImagen.addMouseWheelListener(e -> {
+            if (e.getPreciseWheelRotation() < 0)
+            {
+                zoomAst *= 1.1;
+            }
+            else
+            {
+                zoomAst /= 1.1;
+            }
+            actualizarImagenAst();
+        });
+        lblTablaImagen.addMouseWheelListener(e ->
+        {
+            if (e.getPreciseWheelRotation() < 0)
+            {
+                zoomTabla *= 1.1;
+            }
+            else
+            {
+                zoomTabla /= 1.1;
+            }
+            actualizarImagenTabla();
+        });
+        JButton btnExportarAstSvg = new JButton("Exportar AST SVG");
+        JButton btnExportarTablaSvg = new JButton("Exportar Tabla SVG");
+        jToolBar1.add(btnExportarAstSvg);
+        jToolBar1.add(btnExportarTablaSvg);
+        btnExportarAstSvg.addActionListener(e -> exportarAstSvg());
+        btnExportarTablaSvg.addActionListener(e -> exportarTablaSvg());
         editor.setFont(new Font("Consolas", Font.PLAIN, 14));
         editor.setForeground(Color.BLACK);
         editor.setBackground(Color.WHITE);
@@ -109,9 +151,9 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         editor = new javax.swing.JTextPane();
         jTabbedPane1 = new javax.swing.JTabbedPane();
         jScrollPane3 = new javax.swing.JScrollPane();
-        areaAST = new javax.swing.JTextArea();
+        lblAstImagen = new javax.swing.JLabel();
         jScrollPane4 = new javax.swing.JScrollPane();
-        areaTabla = new javax.swing.JTextArea();
+        lblTablaImagen = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
         areaSalida = new javax.swing.JTextArea();
 
@@ -188,15 +230,11 @@ public class VentanaPrincipal extends javax.swing.JFrame {
 
         jSplitPane1.setLeftComponent(jScrollPane1);
 
-        areaAST.setColumns(20);
-        areaAST.setRows(5);
-        jScrollPane3.setViewportView(areaAST);
+        jScrollPane3.setViewportView(lblAstImagen);
 
         jTabbedPane1.addTab("AST", jScrollPane3);
 
-        areaTabla.setColumns(20);
-        areaTabla.setRows(5);
-        jScrollPane4.setViewportView(areaTabla);
+        jScrollPane4.setViewportView(lblTablaImagen);
 
         jTabbedPane1.addTab("Tabla de Simbolos", jScrollPane4);
 
@@ -204,6 +242,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
 
         jSplitPane2.setLeftComponent(jSplitPane1);
 
+        areaSalida.setEditable(false);
         areaSalida.setColumns(20);
         areaSalida.setRows(5);
         areaSalida.setMinimumSize(new java.awt.Dimension(60, 500));
@@ -278,14 +317,11 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     private void btnCompilarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCompilarActionPerformed
         String codigo = editor.getText();
         areaSalida.setText("");
-        areaAST.setText("");
-        areaTabla.setText("");
         CharStream input = CharStreams.fromString(codigo);
         CodexLatinusLexer lexer = new CodexLatinusLexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         CodexLatinusParser parser = new CodexLatinusParser(tokens);
         parser.removeErrorListeners();
-        
         parser.addErrorListener(new BaseErrorListener()
         {
             @Override
@@ -295,6 +331,9 @@ public class VentanaPrincipal extends javax.swing.JFrame {
             }
         });
         ParseTree tree = parser.programa();
+        ASTVisitor astBuilder = new codexlatinus.compiler.ast.ASTVisitor();
+        NodoAST raizAST = astBuilder.visit(tree);
+        this.raizASTActual = raizAST;
         if (parser.getNumberOfSyntaxErrors() > 0)
         {
             areaSalida.append("Se encontraron errores de sintaxis.\n");
@@ -313,12 +352,37 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         }
         this.arbolActual = tree;
         GeneradorASTDOT astGen = new GeneradorASTDOT();
-        String astDOT = astGen.generarDOT(tree);
-        areaAST.setText(astDOT);
+        String astDOT = astGen.generarDOT(raizAST);
+        try
+        {
+            astOriginal = GraphvizRenderizado.render(astDOT);
+            astSvg = GraphvizRenderizado.renderSVG(astDOT);
+            zoomAst = 1.0;
+            actualizarImagenAst();
+        }
+        catch (IOException | InterruptedException e)
+        {
+            areaSalida.append("Error al generar el AST: " + e.getMessage() + "\n");
+            lblAstImagen.setText("No se pudo generar el AST.");
+            lblAstImagen.setIcon(null);
+            btnTraducirPig.setEnabled(false);
+        }
         GeneradorSimbolosDOT simGen = new GeneradorSimbolosDOT();
         String simDOT = simGen.generarDOT(visitor.getTablaSimbolos());
-        areaTabla.setText(simDOT);
-
+        try
+        {
+            tablaOriginal = GraphvizRenderizado.render(simDOT);
+            tablaSvg = GraphvizRenderizado.renderSVG(simDOT);
+            zoomTabla = 1.0;
+            actualizarImagenTabla();
+        }
+        catch (IOException | InterruptedException e)
+        {
+            areaSalida.append("Error al generar la tabla de símbolos: " + e.getMessage() + "\n");
+            lblTablaImagen.setText("No se pudo generar la tabla.");
+            lblTablaImagen.setIcon(null);
+            btnTraducirPig.setEnabled(false);
+        }
         // Capturar pila de procesos
         ParseTreeWalker walker = new ParseTreeWalker();
         ParseTraceListener traceListener = new ParseTraceListener();
@@ -349,13 +413,13 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     }//GEN-LAST:event_btnVerTablaSimbolosActionPerformed
 
     private void btnTraducirPigActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTraducirPigActionPerformed
-        if (arbolActual == null)
+        if (raizASTActual == null)
         {
             JOptionPane.showMessageDialog(this, "Primero compila un programa válido antes de traducir.");
             return;
         }
         PigLatinTraductor traductor = new PigLatinTraductor();
-        String pig = traductor.visit(arbolActual);
+        String pig = traductor.traducir(raizASTActual);
         this.codigoPig = pig;
         areaSalida.setText("Traducción a PigLatin:\n\n" + pig);
     }//GEN-LAST:event_btnTraducirPigActionPerformed
@@ -384,11 +448,64 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> new VentanaPrincipal().setVisible(true));
     }
-
+    
+    private void actualizarImagenAst()
+    {
+        if (astOriginal != null) {
+            Image img = astOriginal.getImage();
+            int ancho = (int) (astOriginal.getIconWidth() * zoomAst);
+            int alto = (int) (astOriginal.getIconHeight() * zoomAst);
+            Image imgEscalada = img.getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
+            lblAstImagen.setIcon(new ImageIcon(imgEscalada));
+        }
+    }
+    private void actualizarImagenTabla()
+    {
+        if (tablaOriginal != null)
+        {
+            Image img = tablaOriginal.getImage();
+            int ancho = (int) (tablaOriginal.getIconWidth() * zoomTabla);
+            int alto = (int) (tablaOriginal.getIconHeight() * zoomTabla);
+            Image imgEscalada = img.getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
+            lblTablaImagen.setIcon(new ImageIcon(imgEscalada));
+        }
+    }
+    private void exportarAstSvg()
+    {
+        if (astSvg == null)
+        {
+            JOptionPane.showMessageDialog(this, "Primero compila un programa válido para generar el AST.");
+            return;
+        }
+        guardarSvg("ast.svg", astSvg);
+    }
+    private void exportarTablaSvg()
+    {
+        if (tablaSvg == null)
+        {
+            JOptionPane.showMessageDialog(this, "Primero compila un programa válido para generar la tabla de símbolos.");
+            return;
+        }
+        guardarSvg("tabla_simbolos.svg", tablaSvg);
+    }
+    private void guardarSvg(String nombreSugerido, String contenido)
+    {
+        JFileChooser fc = new JFileChooser();
+        fc.setSelectedFile(new File(nombreSugerido));
+        if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION)
+        {
+            try
+            {
+                Files.writeString(fc.getSelectedFile().toPath(), contenido);
+            }
+            catch (IOException e)
+            {
+                JOptionPane.showMessageDialog(this, "Error al guardar SVG: " + e.getMessage());
+            }
+        }
+    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JTextArea areaAST;
     private javax.swing.JTextArea areaSalida;
-    private javax.swing.JTextArea areaTabla;
     private javax.swing.JButton btnAbrirLat;
     private javax.swing.JButton btnCompilar;
     private javax.swing.JButton btnGuardarPig;
@@ -407,5 +524,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     private javax.swing.JSplitPane jSplitPane2;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JToolBar jToolBar1;
+    private javax.swing.JLabel lblAstImagen;
+    private javax.swing.JLabel lblTablaImagen;
     // End of variables declaration//GEN-END:variables
 }

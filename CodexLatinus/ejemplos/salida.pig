@@ -5,7 +5,7 @@ estoway omandantecay : extumtay "Estudiante X";
 estoway uerzafay : umerusnay 10;
 estoway oderpay : umerusnay 0;
 UNERAMay>
-atioray umerusnay alcularPodercay(estoway uerzafay : umerusnay) {
+atioray umerusnay alcularPodercay(estoway uerzafay : umerusnay){
 ARIABILESVay[
 estoway otaltay : umerusnay uerzafay * 2;
 ]
@@ -18,7 +18,7 @@ AIORMay>
 omandantecay %OINK_OINK
 %OINK "Bienvenido" %OINK omandantecay;
 %OINK "Ingresa tu edad";
-isay (edadway >= 18) {
+isay (edadway >= 18){
 ifradocay = erumvay;
 uerzafay = 12;
 
