@@ -5,19 +5,19 @@ import java.util.*;
 public class PasoPila
 {
     private final List<String> pila;
-    private final List<String> log;
-    public PasoPila(List<String> pila, List<String> log) 
+    private final String accion;
+    public PasoPila(List<String> pila, String accion) 
     {
         this.pila = new ArrayList<>(pila);
-        this.log = new ArrayList<>(log);
+        this.accion = accion;
     }
 
     public List<String> getPila()
     {
         return pila;
     }
-    public List<String> getLog()
+    public String getAccion()
     {
-        return log;
+        return accion;
     }
 }

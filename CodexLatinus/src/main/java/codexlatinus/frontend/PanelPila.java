@@ -6,6 +6,8 @@ package codexlatinus.frontend;
 
 import codexlatinus.compiler.visualizacion.PasoPila;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import javax.swing.*;
 
@@ -26,28 +28,41 @@ public class PanelPila extends javax.swing.JPanel {
     {
         this.pasos = pasos;
         setLayout(new BorderLayout());
-
         areaLog.setEditable(false);
         areaLog.setFont(new Font("Monospaced", Font.PLAIN, 12));
-
+        JButton btnReiniciar = new JButton("Reiniciar");
         JButton btnAnterior = new JButton("Anterior");
         JButton btnSiguiente = new JButton("Siguiente");
-
+        JButton btnIrFinal = new JButton("Ir al final");
+        btnReiniciar.addActionListener(e -> reiniciar());
         btnAnterior.addActionListener(e -> retroceder());
         btnSiguiente.addActionListener(e -> avanzar());
-
+        btnIrFinal.addActionListener(e -> irAlFinal());
         JPanel botonera = new JPanel();
+        botonera.add(btnReiniciar);
         botonera.add(btnAnterior);
         botonera.add(btnSiguiente);
-
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                new JScrollPane(listaPila), new JScrollPane(areaLog));
+        botonera.add(btnIrFinal);
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(listaPila), new JScrollPane(areaLog));
         split.setDividerLocation(300);
-
         add(split, BorderLayout.CENTER);
         add(botonera, BorderLayout.SOUTH);
-
         actualizar();
+    }
+    
+    private void reiniciar()
+    {
+        if (pasos.isEmpty()) return;
+        indice = 0;
+        actualizar();
+    }
+    private void irAlFinal()
+    {
+        if (!pasos.isEmpty()) 
+        {
+            indice = pasos.size() - 1;
+            actualizar();
+        }
     }
     
     private void avanzar()
@@ -58,7 +73,6 @@ public class PanelPila extends javax.swing.JPanel {
             actualizar();
         }
     }
-
     private void retroceder()
     {
         if (indice > 0)
@@ -67,14 +81,21 @@ public class PanelPila extends javax.swing.JPanel {
             actualizar();
         }
     }
-
     private void actualizar()
     
     {
         if (pasos.isEmpty()) return;
         PasoPila paso = pasos.get(indice);
-        listaPila.setListData(paso.getPila().toArray(new String[0]));
-        areaLog.setText(String.join("\n", paso.getLog()));
+        List<String> pilaInvertida = new ArrayList<>(paso.getPila());
+        Collections.reverse(pilaInvertida);
+        listaPila.setListData(pilaInvertida.toArray(new String[0]));
+        StringBuilder sbLog = new StringBuilder();
+        for (int i = 0; i <= indice; i++)
+        {
+            sbLog.append(pasos.get(i).getAccion()).append("\n");
+        }
+        areaLog.setText(sbLog.toString());
+        areaLog.setCaretPosition(areaLog.getDocument().getLength());
     }
     /**
      * This method is called from within the constructor to initialize the form.

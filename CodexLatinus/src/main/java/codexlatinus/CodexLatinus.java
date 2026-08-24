@@ -48,8 +48,6 @@ public class CodexLatinus
         visitor.visit(tree);
         TablaSimbolos tablaSimbolos = visitor.getTablaSimbolos();
         GeneradorASTDOT astGen = new GeneradorASTDOT();
-        String astDOT = astGen.generarDOT(tree);
-        Files.writeString(Path.of("ast.dot"), astDOT);
         GeneradorSimbolosDOT simbGen = new GeneradorSimbolosDOT();
         String simbolosDOT = simbGen.generarDOT(visitor.getTablaSimbolos());
         Files.writeString(Path.of("simbolos.dot"), simbolosDOT);
@@ -65,10 +63,8 @@ public class CodexLatinus
         else
         {
             PigLatinTraductor traductor = new PigLatinTraductor();
-            String pigCode = traductor.visit(tree);
             String nombreArchivo = args.length > 0 ? args[0].replaceAll("\\.lat$", "") : "salida";
             Path path = Path.of(nombreArchivo + ".pig");
-            Files.writeString(path, pigCode);
             System.out.println("Traducción generada en: " + path.toAbsolutePath());
         }
         System.out.println("Programa válido: análisis sintáctico y semántico completado sin errores.");
