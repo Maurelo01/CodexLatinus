@@ -28,13 +28,10 @@ public class ASTVisitor extends CodexLatinusBaseVisitor<NodoAST>
     public NodoAST visitSeccionDeclaraciones(CodexLatinusParser.SeccionDeclaracionesContext ctx)
     {
         NodoAST nodo = new NodoAST("DeclaracionesGlobales");
-        for (var decl : ctx.declaracion())
+        for (int i = 1; i < ctx.getChildCount(); i++) 
         {
-            nodo.agregarHijo(visit(decl));
-        }
-        for (var est : ctx.definicionEstructura())
-        {
-            nodo.agregarHijo(visit(est));
+            NodoAST hijo = visit(ctx.getChild(i));
+            if (hijo != null) nodo.agregarHijo(hijo);
         }
         return nodo;
     }
@@ -74,13 +71,41 @@ public class ASTVisitor extends CodexLatinusBaseVisitor<NodoAST>
     public NodoAST visitAtributoEstructura(CodexLatinusParser.AtributoEstructuraContext ctx)
     {
         NodoAST nodo = new NodoAST("Atributo", ctx.ID().getText());
-        nodo.agregarHijo(new NodoAST("Tipo", ctx.tipo().getText()));
+        if (ctx.tipo() != null)
+        {
+            nodo.agregarHijo(new NodoAST("Tipo", ctx.tipo().getText()));
+        }
+        else
+        {
+            nodo.agregarHijo(new NodoAST("Tipo", "bool"));
+        }
         if (ctx.SERIES() != null)
         {
             nodo.agregarHijo(new NodoAST("EsArreglo"));
         }
         return nodo;
     }
+    @Override
+    public NodoAST visitAsigAtributoEstructura(CodexLatinusParser.AsigAtributoEstructuraContext ctx)
+    {
+        NodoAST nodo = new NodoAST("AsignacionAtributoEstructura");
+        nodo.agregarHijo(new NodoAST("Objeto", ctx.ID(0).getText()));
+        nodo.agregarHijo(new NodoAST("Atributo", ctx.ID(1).getText()));
+        nodo.agregarHijo(visit(ctx.estructuraAnonima()));
+        return nodo;
+    }
+
+    @Override
+    public NodoAST visitAsigAtributoArrayEstructura(CodexLatinusParser.AsigAtributoArrayEstructuraContext ctx)
+    {
+        NodoAST nodo = new NodoAST("AsignacionAtributoArrayEstructura");
+        nodo.agregarHijo(new NodoAST("Objeto", ctx.ID(0).getText()));
+        nodo.agregarHijo(new NodoAST("Atributo", ctx.ID(1).getText()));
+        nodo.agregarHijo(visit(ctx.expresion())); // indice
+        nodo.agregarHijo(visit(ctx.estructuraAnonima())); // valor
+        return nodo;
+    }
+    
 
     // FUNCIONES
     @Override
@@ -130,13 +155,10 @@ public class ASTVisitor extends CodexLatinusBaseVisitor<NodoAST>
     public NodoAST visitSeccionVariables(CodexLatinusParser.SeccionVariablesContext ctx)
     {
         NodoAST nodo = new NodoAST("VariablesLocales");
-        for (var decl : ctx.declaracion())
+        for (int i = 2; i < ctx.getChildCount() - 1; i++) 
         {
-            nodo.agregarHijo(visit(decl));
-        }
-        for (var est : ctx.definicionEstructura())
-        {
-            nodo.agregarHijo(visit(est));
+            NodoAST hijo = visit(ctx.getChild(i));
+            if (hijo != null) nodo.agregarHijo(hijo);
         }
         return nodo;
     }
@@ -211,6 +233,17 @@ public class ASTVisitor extends CodexLatinusBaseVisitor<NodoAST>
         }
         return nodo;
     }
+    
+    @Override
+    public NodoAST visitEstructuraAnonima(CodexLatinusParser.EstructuraAnonimaContext ctx)
+    {
+        NodoAST nodo = new NodoAST("EstructuraAnonima");
+        if (ctx.atributos_valores() != null)
+        {
+            nodo.agregarHijo(visit(ctx.atributos_valores()));
+        }
+        return nodo;
+    }
 
     @Override
     public NodoAST visitArr_valores(CodexLatinusParser.Arr_valoresContext ctx)
@@ -273,8 +306,18 @@ public class ASTVisitor extends CodexLatinusBaseVisitor<NodoAST>
     public NodoAST visitInstruccion(CodexLatinusParser.InstruccionContext ctx)
     {
         if (ctx.asignacion() != null) return visit(ctx.asignacion());
-        if (ctx.incremento() != null) return visit(ctx.incremento());
-        if (ctx.expresion() != null) return visit(ctx.expresion());
+        if (ctx.incremento() != null)
+        {
+            NodoAST nodo = new NodoAST("InstruccionIncremento");
+            nodo.agregarHijo(visit(ctx.incremento()));
+            return nodo;
+        }
+        if (ctx.expresion() != null)
+        {
+            NodoAST nodo = new NodoAST("InstruccionExpresion");
+            nodo.agregarHijo(visit(ctx.expresion()));
+            return nodo;
+        }
         if (ctx.condicional() != null) return visit(ctx.condicional());
         if (ctx.bucle() != null) return visit(ctx.bucle());
         if (ctx.interrupcion() != null) return visit(ctx.interrupcion());
@@ -466,24 +509,24 @@ public class ASTVisitor extends CodexLatinusBaseVisitor<NodoAST>
     public NodoAST visitSumaResta(CodexLatinusParser.SumaRestaContext ctx)
     {
         NodoAST nodo = new NodoAST(ctx.MAS() != null ? "+" : "-");
-        nodo.agregarHijo(visit(ctx.expresion()));
-        nodo.agregarHijo(visit(ctx.termino()));
+        nodo.agregarHijo(visit(ctx.expresion(0)));
+        nodo.agregarHijo(visit(ctx.expresion(1)));
         return nodo;
     }
     @Override
     public NodoAST visitComparacion(CodexLatinusParser.ComparacionContext ctx)
     {
-        NodoAST nodo = new NodoAST(ctx.getChild(1).getText()); // operador
-        nodo.agregarHijo(visit(ctx.expresion()));
-        nodo.agregarHijo(visit(ctx.termino()));
+        NodoAST nodo = new NodoAST(ctx.getChild(1).getText());
+        nodo.agregarHijo(visit(ctx.expresion(0)));
+        nodo.agregarHijo(visit(ctx.expresion(1)));
         return nodo;
     }
     @Override
     public NodoAST visitIgualdad(CodexLatinusParser.IgualdadContext ctx)
     {
         NodoAST nodo = new NodoAST(ctx.IGUALIGUAL() != null ? "==" : "!=");
-        nodo.agregarHijo(visit(ctx.expresion()));
-        nodo.agregarHijo(visit(ctx.termino()));
+        nodo.agregarHijo(visit(ctx.expresion(0)));
+        nodo.agregarHijo(visit(ctx.expresion(1)));
         return nodo;
     }
 
@@ -491,8 +534,8 @@ public class ASTVisitor extends CodexLatinusBaseVisitor<NodoAST>
     public NodoAST visitAndLogico(CodexLatinusParser.AndLogicoContext ctx)
     {
         NodoAST nodo = new NodoAST("&&");
-        nodo.agregarHijo(visit(ctx.expresion()));
-        nodo.agregarHijo(visit(ctx.termino()));
+        nodo.agregarHijo(visit(ctx.expresion(0)));
+        nodo.agregarHijo(visit(ctx.expresion(1)));
         return nodo;
     }
 
@@ -500,22 +543,18 @@ public class ASTVisitor extends CodexLatinusBaseVisitor<NodoAST>
     public NodoAST visitOrLogico(CodexLatinusParser.OrLogicoContext ctx)
     {
         NodoAST nodo = new NodoAST("||");
-        nodo.agregarHijo(visit(ctx.expresion()));
-        nodo.agregarHijo(visit(ctx.termino()));
+        nodo.agregarHijo(visit(ctx.expresion(0)));
+        nodo.agregarHijo(visit(ctx.expresion(1)));
         return nodo;
     }
     @Override
     public NodoAST visitMultDiv(CodexLatinusParser.MultDivContext ctx)
     {
-        NodoAST nodo = new NodoAST(ctx.POR() != null ? "*" : "/");
-        nodo.agregarHijo(visit(ctx.termino()));
-        nodo.agregarHijo(visit(ctx.factor()));
+        String operador = ctx.POR() != null ? "*" : (ctx.DIVISION() != null ? "/" : "%");
+        NodoAST nodo = new NodoAST(operador);
+        nodo.agregarHijo(visit(ctx.expresion(0)));
+        nodo.agregarHijo(visit(ctx.expresion(1)));
         return nodo;
-    }
-    @Override
-    public NodoAST visitToTermino(CodexLatinusParser.ToTerminoContext ctx)
-    {
-        return visit(ctx.termino());
     }
 
     @Override
@@ -525,6 +564,13 @@ public class ASTVisitor extends CodexLatinusBaseVisitor<NodoAST>
     }
 
     // FACTORES
+    @Override
+    public NodoAST visitNegacionUnaria(CodexLatinusParser.NegacionUnariaContext ctx)
+    {
+        NodoAST nodo = new NodoAST("NegacionUnaria");
+        nodo.agregarHijo(visit(ctx.factor()));
+        return nodo;
+    }
     @Override
     public NodoAST visitNumLiteral(CodexLatinusParser.NumLiteralContext ctx)
     {

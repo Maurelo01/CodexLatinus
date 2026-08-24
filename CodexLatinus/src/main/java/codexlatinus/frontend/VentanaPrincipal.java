@@ -247,7 +247,6 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         areaSalida.setRows(5);
         areaSalida.setMinimumSize(new java.awt.Dimension(60, 500));
         areaSalida.setPreferredSize(new java.awt.Dimension(60, 500));
-        areaSalida.setRequestFocusEnabled(false);
         jScrollPane2.setViewportView(areaSalida);
 
         jSplitPane2.setRightComponent(jScrollPane2);
@@ -318,22 +317,60 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         String codigo = editor.getText();
         areaSalida.setText("");
         CharStream input = CharStreams.fromString(codigo);
+        final int[] erroresLexicos = {0};
         CodexLatinusLexer lexer = new CodexLatinusLexer(input);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(new BaseErrorListener()
+        {
+            @Override
+            public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e)
+            {
+                erroresLexicos[0]++;
+                areaSalida.append(String.format("Error Léxico en línea %d, columna %d: %s%n", line, charPositionInLine + 1, msg));
+            }
+        });
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         CodexLatinusParser parser = new CodexLatinusParser(tokens);
         parser.removeErrorListeners();
         parser.addErrorListener(new BaseErrorListener()
         {
             @Override
-            public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) 
+            public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e)
             {
-                areaSalida.append(String.format("Error sintáctico línea %d:%d - %s%n", line, charPositionInLine + 1, msg));
+                areaSalida.append(String.format("Error Sintáctico en línea %d, columna %d: %s%n", line, charPositionInLine + 1, msg));
             }
         });
         ParseTree tree = parser.programa();
+        int erroresSintacticos = parser.getNumberOfSyntaxErrors();
+        if (erroresLexicos[0] > 0 || erroresSintacticos > 0)
+        {
+            areaSalida.append("Se detuvo la compilación por errores léxicos o sintácticos.\n");
+            arbolActual = null;
+            raizASTActual = null;
+            btnTraducirPig.setEnabled(false);
+            return;
+        }
         ASTVisitor astBuilder = new codexlatinus.compiler.ast.ASTVisitor();
         NodoAST raizAST = astBuilder.visit(tree);
         this.raizASTActual = raizAST;
+        MiVisitor visitor = new MiVisitor();
+        visitor.visit(tree);
+        if (visitor.getErroresSemanticos() > 0)
+        {
+            areaSalida.append("\nSe encontraron " + visitor.getErroresSemanticos() + " errores semánticos:\n");
+            for (String err : visitor.getListaErrores())
+            {
+                areaSalida.append(err + "\n");
+            }
+            arbolActual = null;
+            raizASTActual = null;
+            btnTraducirPig.setEnabled(false);
+            lblAstImagen.setIcon(null);
+            lblTablaImagen.setIcon(null);
+            return;
+        }
+        this.arbolActual = tree;
+        GeneradorASTDOT astGen = new GeneradorASTDOT();
         if (parser.getNumberOfSyntaxErrors() > 0)
         {
             areaSalida.append("Se encontraron errores de sintaxis.\n");
@@ -341,17 +378,6 @@ public class VentanaPrincipal extends javax.swing.JFrame {
             btnTraducirPig.setEnabled(false);
             return;
         }
-        MiVisitor visitor = new MiVisitor();
-        visitor.visit(tree);
-        if (visitor.getErroresSemanticos() > 0)
-        {
-            areaSalida.append("Se encontraron " + visitor.getErroresSemanticos() + " errores semánticos.\n");
-            arbolActual = null;
-            btnTraducirPig.setEnabled(false);
-            return;
-        }
-        this.arbolActual = tree;
-        GeneradorASTDOT astGen = new GeneradorASTDOT();
         String astDOT = astGen.generarDOT(raizAST);
         try
         {
